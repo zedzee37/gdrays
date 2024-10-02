@@ -20,6 +20,30 @@ struct HitInfo {
 	float dst;
 };
 
+uint nextRandom(inout uint state) {
+	state = state * uint(747796405) + uint(2891336453);
+	uint result = ((state >> ((state >> uint(28)) + uint(4))) ^ state) * uint(277803737);
+	result = (result >> uint(22)) ^ result;
+	return result;
+}
+
+float random(inout uint state) {
+	return float(nextRandom(state)) / 4294967295.0; // 2^32 - 1
+}
+
+float randomNormal(inout uint state) {
+	float theta = 2.0 * 3.1415926 * float(random(state));
+	float rho = sqrt(-2.0 * log(float(random(state))));
+	return rho * cos(theta);
+}
+
+vec3 randomDirection(inout uint state) {
+	float x = randomNormal(state);
+	float y = randomNormal(state);
+	float z = randomNormal(state);
+	return vec3(x, y, z);
+}
+
 HitInfo checkSphere(Ray ray, vec3 pos, float radius) {
 	HitInfo hitInfo;
 	vec3 rayOrigin = ray.origin - pos;
@@ -46,6 +70,7 @@ HitInfo checkSphere(Ray ray, vec3 pos, float radius) {
 	hitInfo.hit = false;
 	return hitInfo;
 }
+
 
 vec3 raycastSphere(Ray ray) {
 	float closestDst = 1000000000.0;
@@ -76,11 +101,15 @@ vec3 raycastSphere(Ray ray) {
 
 void fragment() {
 	vec3 worldPos = (vec4(VERTEX, 1.0) * VIEW_MATRIX).xyz;
+	
+	vec2 pixelCoord = UV * VIEWPORT_SIZE;
+	uint pixelIndex = uint(pixelCoord.y * VIEWPORT_SIZE.x + pixelCoord.x);
 
 	Ray ray;
 	ray.origin = CAMERA_POSITION_WORLD;
 	ray.direction = normalize(worldPos);
 
 	ALBEDO = raycastSphere(ray);
+	ALBEDO = randomDirection(pixelIndex);
 }
 
