@@ -1,0 +1,22 @@
+shader_type spatial;
+
+uniform sampler2D depthTexture : hint_depth_texture, repeat_disable, filter_nearest;
+uniform float[256] sphereRadiuses;
+uniform vec3[256] spherePositions;
+uniform int sphereCount;
+
+
+struct Ray {
+	vec3 origin;
+	vec3 direction;
+};
+
+void fragment() {
+	vec3 worldPos = (vec4(VERTEX, 1.0) * VIEW_MATRIX).xyz;
+
+	Ray ray;
+	ray.origin = CAMERA_POSITION_WORLD;
+	ray.direction = normalize(worldPos);
+}
+
+

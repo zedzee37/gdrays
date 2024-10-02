@@ -1,0 +1,60 @@
+[gd_scene load_steps=9 format=3 uid="uid://b8rnlwvf6dhof"]
+
+[ext_resource type="Script" path="res://scripts/ray_tracing_manager.gd" id="1_sv8dg"]
+[ext_resource type="Shader" path="res://shaders/ray_tracing.gdshader" id="3_e3eon"]
+[ext_resource type="Script" path="res://scripts/ray_traced_sphere.gd" id="3_eutl6"]
+[ext_resource type="Script" path="res://scripts/oscillator.gd" id="4_73uhe"]
+
+[sub_resource type="Gradient" id="Gradient_54uud"]
+offsets = PackedFloat32Array(0.248677, 1)
+colors = PackedColorArray(0.125911, 0.125911, 0.125911, 1, 0.105882, 0.682353, 1, 1)
+
+[sub_resource type="GradientTexture1D" id="GradientTexture1D_1jbjx"]
+gradient = SubResource("Gradient_54uud")
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_1o1ku"]
+render_priority = 0
+shader = ExtResource("3_e3eon")
+shader_parameter/sphereRadiuses = PackedFloat32Array(1)
+shader_parameter/spherePositions = PackedVector3Array(0, 0, 0)
+shader_parameter/sphereColors = PackedColorArray(1, 1, 1, 1)
+shader_parameter/sphereCount = 1
+shader_parameter/skyGradient = SubResource("GradientTexture1D_1jbjx")
+
+[sub_resource type="QuadMesh" id="QuadMesh_kltur"]
+material = SubResource("ShaderMaterial_1o1ku")
+
+[node name="Main" type="Node3D"]
+
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.984543, 0.175143, 0, -0.175143, 0.984543, 0, 0.967554, 2.94735)
+script = ExtResource("1_sv8dg")
+
+[node name="RayTracingShader" type="MeshInstance3D" parent="Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.1)
+gi_mode = 0
+mesh = SubResource("QuadMesh_kltur")
+
+[node name="RayTracedSphere" type="CSGSphere3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0.182003)
+script = ExtResource("3_eutl6")
+color = Color(0.86517, 0.205871, 0.179659, 1)
+
+[node name="Node" type="Node" parent="RayTracedSphere"]
+script = ExtResource("4_73uhe")
+
+[node name="RayTracedSphere3" type="CSGSphere3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -1.99269, 0.887733, -2.51716)
+script = ExtResource("3_eutl6")
+color = Color(1, 1, 1, 1)
+
+[node name="RayTracedSphere4" type="CSGSphere3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.999986, 0.00525342, 0, -0.00525342, 0.999986, 3.39279, 0.959901, -2.01888)
+radius = 0.97
+script = ExtResource("3_eutl6")
+color = Color(0.427451, 1, 1, 1)
+
+[node name="RayTracedSphere2" type="CSGSphere3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.976817, -6.00337)
+script = ExtResource("3_eutl6")
+color = Color(1, 0.160784, 1, 1)
