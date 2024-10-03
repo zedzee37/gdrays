@@ -28,25 +28,6 @@ material = SubResource("ShaderMaterial_1o1ku")
 
 [node name="Main" type="Node3D"]
 
-[node name="CanvasLayer" type="CanvasLayer" parent="."]
-
-[node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("texture_rect")]
-script = ExtResource("1_8apn8")
-texture_rect = NodePath("../CanvasLayer/TextureRect")
-
-[node name="RayTracingShader" type="MeshInstance3D" parent="Camera3D"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.1)
-visible = false
-gi_mode = 0
-mesh = SubResource("QuadMesh_kltur")
-
 [node name="RayTracedSphere2" type="CSGSphere3D" parent="."]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.055788, 2.44342, -60.3026)
 radius = 32.099
@@ -84,3 +65,22 @@ transform = Transform3D(0.999771, 0.0214135, 5.38181e-05, -0.0214136, 0.999768, 
 radius = 0.609656
 script = ExtResource("3_eutl6")
 color = Color(1, 0, 0, 1)
+
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="TextureRect" type="TextureRect" parent="CanvasLayer"]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("texture_rect")]
+script = ExtResource("1_8apn8")
+texture_rect = NodePath("../CanvasLayer/TextureRect")
+
+[node name="RayTracingShader" type="MeshInstance3D" parent="Camera3D"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -0.1)
+visible = false
+gi_mode = 0
+mesh = SubResource("QuadMesh_kltur")

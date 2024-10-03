@@ -26,9 +26,7 @@ struct Sphere {
     Material emission_color;
 };
 
-layout(set = 0, binding = 3, std430) restrict buffer Spheres {
-    Sphere data[];
-} spheres;
+layhout (s
 
 void main() {
 	ivec2 image_size = imageSize(image);

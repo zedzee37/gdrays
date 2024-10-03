@@ -87,10 +87,18 @@ func setup_compute() -> void:
 	parameters_uniform.binding = 2
 	parameters_uniform.add_id(parameters_buffer)
 
+	var packed_spheres := get_spheres()
+	var spheres_buffer = rd.storage_buffer_create(spheres.size(), packed_spheres)
+	var spheres_uniform = RDUniform.new()
+	spheres_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	spheres_uniform.binding = 3
+	spheres_uniform.add_id(spheres_buffer)
+
 	bindings = [
 		output_tex_uniform,
 		camera_matrix_uniform,
-		parameters_uniform
+		parameters_uniform,
+		spheres_uniform
 	]
 	uniform_set = rd.uniform_set_create(bindings, shader, 0)
 
@@ -104,7 +112,15 @@ func update_compute() -> void:
 	camera_matrix_uniform.binding = 1
 	camera_matrix_uniform.add_id(camera_matrix_buffer)
 
+	var packed_spheres := get_spheres()
+	var spheres_buffer = rd.storage_buffer_create(spheres.size(), packed_spheres)
+	var spheres_uniform = RDUniform.new()
+	spheres_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	spheres_uniform.binding = 3
+	spheres_uniform.add_id(spheres_buffer)
+
 	bindings[1] = camera_matrix_uniform
+	bindings[3] = spheres_uniform
 	uniform_set = rd.uniform_set_create(bindings, shader, 0)
 
 
@@ -143,6 +159,25 @@ func get_camera_matrix() -> PackedByteArray:
 
 func get_parameters() -> PackedByteArray:
 	return PackedByteArray([
-		var_to_bytes(max_bounces),
-		var_to_bytes(rays_per_pixel)
+		max_bounces,
+		rays_per_pixel
 	])
+
+
+func get_spheres() -> PackedByteArray:
+	var packed_spheres := []
+
+	for sphere: RayTracedSphere in spheres:
+		var material = PackedByteArray([
+			sphere.color,
+			sphere.light_intensity,
+			sphere.light_color
+		])
+		packed_spheres.append(PackedByteArray([
+			sphere.radius,
+			sphere.global_position,
+			material
+		]))
+	
+	return PackedByteArray(packed_spheres)
+	
