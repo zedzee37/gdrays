@@ -55,6 +55,30 @@ struct HitInfo {
     Material material;
 };
 
+uint next_rand(inout uint state) {
+    state = state * 747796405 + 2891336453;
+    uint result = ((state >> ((state >> 28) + 4)) ^ state) * 277803737;
+    result = (result >> 22) ^ result;
+    return result;
+}
+
+float rand(inout uint state) {
+    return next_rand(state) / 4294967295.0; // 2^32 - 1
+}
+
+float rand_nrm(inout uint state) {
+    float theta = 2 * 3.1415926 * rand(state);
+    float rho = sqrt(-2 * log(rand(state)));
+    return rho * cos(theta);
+}
+
+vec3 rand_direction(inout uint state) {
+    float x = rand_nrm(state);
+    float y = rand_nrm(state);
+    float z = rand_nrm(state);
+    return normalize(vec3(x, y, z));
+}
+
 HitInfo check_sphere(Ray ray, float radius, vec3 center) {
     HitInfo hit_info;
     hit_info.hit = false;
@@ -71,7 +95,7 @@ HitInfo check_sphere(Ray ray, float radius, vec3 center) {
         if (dst >= 0.0) {
             hit_info.hit = true;
             hit_info.dst = dst;//hit_info.hit_pos = ray.direction * dst + ray.origin;
-            hit_info.hit_pos = ray.direction * dst + ray_origin;
+            hit_info.hit_pos = ray.direction * dst + ray.origin;
             hit_info.normal = normalize(hit_info.hit_pos - center);
             return hit_info;
         }
@@ -105,8 +129,38 @@ HitInfo raycast_sphere(Ray ray) {
     return closest_sphere;
 }
 
+vec3 trace(Ray ray, inout uint state) {
+    vec3 accumulated_light = vec3(0.0);
+    vec3 ray_color = vec3(1.0);
+    Ray current_ray = ray;
+
+    for (int i = 0; i <= params.max_bounces; i++) {
+        HitInfo result = raycast_sphere(current_ray);         
+
+        if (!result.hit) {
+            return accumulated_light;
+        }
+
+        current_ray.origin = result.hit_pos;
+        vec3 diffuse_dir = normalize(result.normal + rand_direction(state));
+
+        current_ray.direction = diffuse_dir;
+        Material material = result.material;
+
+        vec3 light_color = material.emission_color * material.emission_strength; 
+
+        accumulated_light += light_color * ray_color;
+        ray_color *= material.color;
+    }
+
+    return accumulated_light;
+}
+
 void main() {
     ivec2 image_size = imageSize(image);
+    uint pixel_idx = gl_GlobalInvocationID.y * image_size.x + gl_GlobalInvocationID.x;
+    uint rand_state = pixel_idx * 719393;
+
     vec2 uv = vec2((gl_GlobalInvocationID.xy) / vec2(image_size));
     vec2 ndc = uv * 2.0 - 1.0;
 
@@ -118,16 +172,17 @@ void main() {
 
     vec3 cam_world_pos = camera_data.camera_to_world[3].xyz;
 
-    Ray ray;
-    ray.origin = cam_world_pos;
-    ray.direction = direction;
+    vec3 total_light = vec3(0.0);
 
-    HitInfo sphere_hit = raycast_sphere(ray);
+    for (int i = 0; i <= params.pixels_per_ray; i++) {
+        Ray ray;
+        ray.origin = cam_world_pos;
+        ray.direction = direction;
 
-    if (sphere_hit.hit) {
-        imageStore(image, ivec2(gl_GlobalInvocationID.xy), vec4(sphere_hit.material.color, 1.0));
-    } else {
-        imageStore(image, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(0.0), 1.0));
+        vec3 hit_color = trace(ray, rand_state);
+        total_light += hit_color;
     }
+
+    imageStore(image, ivec2(gl_GlobalInvocationID.xy), vec4((total_light / (params.pixels_per_ray)), 1.0));
 }
 

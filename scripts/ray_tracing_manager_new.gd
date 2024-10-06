@@ -5,9 +5,12 @@ extends Camera3D
 static var instance: RayTracingManagerNew
 
 
+@export var work_groups: int = 8;
 @export var texture_rect: TextureRect
 @export var max_bounces: int = 2
 @export var rays_per_pixel: int = 1
+@export var mouse_sensitivity : float = 1.0
+@export var move_speed : float = 0.1
 
 
 var image_size : Vector2i
@@ -20,6 +23,7 @@ var output_tex: RID
 var uniform_set
 var bindings
 var output_image: Image
+var frame: int
 
 
 func _enter_tree() -> void:
@@ -35,19 +39,39 @@ func _ready() -> void:
 
 
 func _input(event: InputEvent) -> void:
-	if event.is_action("ui_left"):
-		rot += 0.04
-		rot = fmod(rot, 2 * PI)
-
+	if event is InputEventMouseMotion:
+		if Input.is_action_pressed("RMB"):
+			rotate_y(deg_to_rad(-event.relative.x * mouse_sensitivity))
+			rotate_object_local(Vector3(1.0, 0.0, 0.0), deg_to_rad(-event.relative.y * mouse_sensitivity))
 
 func _process(_delta: float) -> void:
-	position.x = cos(rot) * 10
-	position.z = sin(rot) * 10
-	position.y = 10
-	look_at(Vector3(0, 0, 0))
+	if Input.is_action_pressed("RMB"):
+		Input.set_mouse_mode(Input.MOUSE_MODE_CAPTURED)
+	else:
+		Input.set_mouse_mode(Input.MOUSE_MODE_VISIBLE)
+	
+	move()
 
 	update_compute()
 	render()
+
+func move():
+	var input_vector := Vector3.ZERO
+	input_vector.x = Input.get_action_strength("ui_right") - Input.get_action_strength("ui_left")
+	input_vector.z = Input.get_action_strength("ui_down") - Input.get_action_strength("ui_up")
+	input_vector.y = Input.get_action_strength("move_v_up") - Input.get_action_strength("move_v_down")
+	if input_vector.length() > 1.0:
+		input_vector = input_vector.normalized()
+	
+	var displacement := Vector3.ZERO
+	displacement = global_transform.basis.z * move_speed * input_vector.z
+	global_transform.origin += displacement
+	
+	displacement = global_transform.basis.x * move_speed * input_vector.x
+	global_transform.origin += displacement
+	
+	displacement = global_transform.basis.y * move_speed * input_vector.y
+	global_transform.origin -= displacement
 
 
 func setup_compute() -> void:
@@ -119,6 +143,13 @@ func update_compute() -> void:
 	spheres_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	spheres_uniform.binding = 3
 	spheres_uniform.add_id(spheres_buffer)
+	
+	var parameters := get_parameters()
+	var parameters_buffer := rd.storage_buffer_create(parameters.size(), parameters)
+	var parameters_uniform := RDUniform.new()
+	parameters_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
+	parameters_uniform.binding = 2
+	parameters_uniform.add_id(parameters_buffer)
 
 	bindings[1] = camera_matrix_uniform
 	bindings[3] = spheres_uniform
@@ -132,7 +163,7 @@ func render() -> void:
 	rd.compute_list_bind_uniform_set(compute_list, uniform_set, 0)
 
 	@warning_ignore("integer_division")
-	rd.compute_list_dispatch(compute_list, image_size.x / 8, image_size.y / 8, 1)
+	rd.compute_list_dispatch(compute_list, image_size.x / work_groups, image_size.y / work_groups, 1)
 
 	rd.compute_list_end()
 	rd.submit()
@@ -174,10 +205,10 @@ func get_camera_properties() -> PackedByteArray:
 
 
 func get_parameters() -> PackedByteArray:
-	return PackedByteArray([
-		max_bounces,
-		rays_per_pixel
-	])
+	return PackedInt32Array([
+			max_bounces,
+			rays_per_pixel
+		]).to_byte_array()
 
 
 func get_spheres() -> PackedByteArray:

@@ -1,9 +1,11 @@
-[gd_scene load_steps=3 format=3 uid="uid://b8rnlwvf6dhof"]
+[gd_scene load_steps=4 format=3 uid="uid://b8rnlwvf6dhof"]
 
 [ext_resource type="Script" path="res://scripts/ray_tracing_manager_new.gd" id="1_8apn8"]
+[ext_resource type="Script" path="res://scenes/unrenderizer.gd" id="1_548cd"]
 [ext_resource type="Script" path="res://scripts/ray_traced_sphere.gd" id="3_eutl6"]
 
 [node name="Main" type="Node3D"]
+script = ExtResource("1_548cd")
 
 [node name="CanvasLayer" type="CanvasLayer" parent="."]
 
@@ -15,24 +17,58 @@ grow_horizontal = 2
 grow_vertical = 2
 
 [node name="RayTracedSphere" type="CSGSphere3D" parent="."]
-transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, 0, 0, 0)
-radius = 1.64702
+transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, -27.1594, 13.0834, -102.011)
+radius = 42.1664
 script = ExtResource("3_eutl6")
-color = Color(0.423543, 0.103185, 0.123008, 1)
+light_intensity = 1.0
+light_color = Color(1, 1, 1, 1)
 
-[node name="RayTracedSphere2" type="CSGSphere3D" parent="."]
-transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, 5.26461, -0.258367, -1.46766)
-radius = 2.74345
+[node name="RayTracedSphere4" type="CSGSphere3D" parent="."]
+transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, 0.107761, -47.0961, -0.253697)
+radius = 42.3044
+script = ExtResource("3_eutl6")
+color = Color(0.546035, 0.718137, 0.957319, 1)
+
+[node name="RayTracedSphere6" type="CSGSphere3D" parent="."]
+transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, -0.0218072, 19.5146, 66.9217)
+radius = 42.3044
 script = ExtResource("3_eutl6")
 color = Color(0.546035, 0.718137, 0.957319, 1)
 
 [node name="RayTracedSphere3" type="CSGSphere3D" parent="."]
-transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, -1.16395, 3.22434, 7.77934)
+transform = Transform3D(1.01354, 0, -0.0448369, 0, 1.01453, 0, 0.0448369, 0, 1.01354, -16.1284, 2.34687, -33.8758)
 radius = 2.74345
 script = ExtResource("3_eutl6")
 color = Color(0.814784, 0.521746, 0.90375, 1)
+light_intensity = 0.1
+
+[node name="RayTracedSphere5" type="CSGSphere3D" parent="."]
+transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, -1.22591, 3.01529, -3.69681)
+radius = 7.81711
+script = ExtResource("3_eutl6")
+color = Color(0.559166, 0.625806, 0.983835, 1)
+
+[node name="RayTracedSphere8" type="CSGSphere3D" parent="."]
+transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, -15.9502, -6.67974, -3.69681)
+radius = 0.955114
+script = ExtResource("3_eutl6")
+color = Color(0, 0.764844, 0.628039, 1)
+
+[node name="RayTracedSphere9" type="CSGSphere3D" parent="."]
+transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, -11.4151, -2.66899, -3.69681)
+radius = 2.79142
+script = ExtResource("3_eutl6")
+color = Color(0.665586, 0, 0.376406, 1)
+
+[node name="RayTracedSphere7" type="CSGSphere3D" parent="."]
+transform = Transform3D(1.01453, 0, 0, 0, 1.01453, 0, 0, 0, 1.01453, 12.4993, 2.34687, -2.88635)
+radius = 5.0
+script = ExtResource("3_eutl6")
+color = Color(0.89447, 0.522768, 0.664355, 1)
 
 [node name="Camera3D" type="Camera3D" parent="." node_paths=PackedStringArray("texture_rect")]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 2.25634)
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.165524, 21.0396, -30.1502)
 script = ExtResource("1_8apn8")
 texture_rect = NodePath("../CanvasLayer/TextureRect")
+max_bounces = 10
+rays_per_pixel = 5
