@@ -6,7 +6,11 @@ layout(local_size_x = 8, local_size_y = 8, local_size_z = 1) in;
 layout(rgba32f, binding = 0) uniform image2D image;
 
 layout(set = 0, binding = 1, std430) restrict buffer CameraData {
-    mat4 camera_matrix;
+    mat4 camera_to_world;
+    mat4 projection_matrix;
+    float near;
+    float far;
+    float fov;
 } camera_data;
 
 layout(set = 0, binding = 2, std430) restrict buffer Parameters {
@@ -22,17 +26,108 @@ struct Material {
 
 struct Sphere {
     float radius;
-    vec3 origin;
-    Material emission_color;
+    float x;
+    float y;
+    float z;
+    float r;
+    float g;
+    float b;
+    float emission_strength;
+    float emission_r;
+    float emission_g;
+    float emission_b;
 };
 
 layout(set = 0, binding = 3, std430) restrict buffer Spheres {
     Sphere data[];
 } spheres;
 
-void main() {
-	ivec2 image_size = imageSize(image);
-	vec2 uv = vec2((gl_GlobalInvocationID.xy) / vec2(image_size));
+struct Ray {
+    vec3 origin;
+    vec3 direction;
+};
 
-    imageStore(image, ivec2(gl_GlobalInvocationID.xy), vec4(uv.x, uv.y, 0.0, 1.0));
+struct HitInfo {
+    vec3 hit_pos;
+    vec3 normal;
+    bool hit;
+    float dst;
+    Material material;
+};
+
+HitInfo check_sphere(Ray ray, float radius, vec3 center) {
+    HitInfo hit_info;
+    hit_info.hit = false;
+    vec3 ray_origin = ray.origin - center;
+
+    float a = dot(ray.direction, ray.direction);
+    float b = 2 * dot(ray.direction, ray_origin);
+    float c = dot(ray_origin, ray_origin) - radius * radius;
+
+    float discriminant = (b * b) - (4 * a * c);
+    if (discriminant >= 0.0) {
+        float dst = (-b - sqrt(discriminant)) / (2 * a); 
+
+        if (dst >= 0.0) {
+            hit_info.hit = true;
+            hit_info.dst = dst;//hit_info.hit_pos = ray.direction * dst + ray.origin;
+            hit_info.hit_pos = ray.direction * dst + ray_origin;
+            hit_info.normal = normalize(hit_info.hit_pos - center);
+            return hit_info;
+        }
+    }
+
+    return hit_info;
 }
+
+HitInfo raycast_sphere(Ray ray) {
+    HitInfo closest_sphere;
+    closest_sphere.hit = false;
+    float closest_dist = 100000000000.0; // This returns +infinity
+
+    int sphere_count = spheres.data.length();
+    for (int i = 0; i < sphere_count; i++) {
+        Sphere sphere = spheres.data[i];
+        HitInfo hit_info = check_sphere(ray, sphere.radius, vec3(sphere.x, sphere.y, sphere.z));
+
+        if (hit_info.hit && hit_info.dst < closest_dist) {
+            closest_dist = hit_info.dst;
+            closest_sphere = hit_info;
+
+            Material material;
+            material.color = vec3(sphere.r, sphere.g, sphere.b);
+            material.emission_color = vec3(sphere.emission_r, sphere.emission_g, sphere.emission_b);
+            material.emission_strength = sphere.emission_strength;
+            closest_sphere.material = material;
+        }
+    }
+
+    return closest_sphere;
+}
+
+void main() {
+    ivec2 image_size = imageSize(image);
+    vec2 uv = vec2((gl_GlobalInvocationID.xy) / vec2(image_size));
+    vec2 ndc = uv * 2.0 - 1.0;
+
+    mat4 inverse_projection = inverse(camera_data.projection_matrix);
+
+    vec3 direction = (inverse_projection * vec4(ndc, -1.0, 1.0)).xyz;
+    direction = (camera_data.camera_to_world * vec4(direction, 0.0)).xyz; 
+    direction = normalize(direction);
+
+    vec3 cam_world_pos = camera_data.camera_to_world[3].xyz;
+
+    Ray ray;
+    ray.origin = cam_world_pos;
+    ray.direction = direction;
+
+    HitInfo sphere_hit = raycast_sphere(ray);
+
+    if (sphere_hit.hit) {
+        imageStore(image, ivec2(gl_GlobalInvocationID.xy), vec4(sphere_hit.material.color, 1.0));
+    } else {
+        imageStore(image, ivec2(gl_GlobalInvocationID.xy), vec4(vec3(0.0), 1.0));
+    }
+}
+

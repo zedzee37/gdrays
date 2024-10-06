@@ -35,7 +35,7 @@ struct HitInfo {
 float random(inout vec2 randomState) {
     float rand = fract(sin(dot(randomState.xy,
         vec2(12.9898,78.233))) * 43758.5453123);
-	
+
 	randomState = vec2(rand);
 	return rand;
 }
@@ -133,7 +133,7 @@ vec3 trace(Ray ray, inout vec2 randomState) {
 
 		ray.origin = hitInfo.hitPos;
 		ray.direction = randomDirection(randomState);
-		
+
 		if (dot(ray.direction, hitInfo.normal) < 0.0) {
 			ray.direction *= vec3(-1.0);
 		}

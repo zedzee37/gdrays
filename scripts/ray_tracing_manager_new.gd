@@ -31,6 +31,7 @@ func _ready() -> void:
 	image_size.y = ProjectSettings.get_setting("display/window/size/viewport_height")
 
 	setup_compute()
+	print(get_camera_projection())
 
 
 func _input(event: InputEvent) -> void:
@@ -72,7 +73,7 @@ func setup_compute() -> void:
 	output_tex_uniform.add_id(output_tex)
 
 	# Camera Matrix
-	var camera_matrix := get_camera_matrix()
+	var camera_matrix := get_camera_properties()
 	var camera_matrix_buffer = rd.storage_buffer_create(camera_matrix.size(), camera_matrix)
 
 	var camera_matrix_uniform = RDUniform.new()
@@ -88,7 +89,7 @@ func setup_compute() -> void:
 	parameters_uniform.add_id(parameters_buffer)
 
 	var packed_spheres := get_spheres()
-	var spheres_buffer = rd.storage_buffer_create(spheres.size(), packed_spheres)
+	var spheres_buffer = rd.storage_buffer_create(packed_spheres.size(), packed_spheres)
 	var spheres_uniform = RDUniform.new()
 	spheres_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	spheres_uniform.binding = 3
@@ -104,7 +105,7 @@ func setup_compute() -> void:
 
 
 func update_compute() -> void:
-	var camera_matrix := get_camera_matrix()
+	var camera_matrix := get_camera_properties()
 	var camera_matrix_buffer = rd.storage_buffer_create(camera_matrix.size(), camera_matrix)
 
 	var camera_matrix_uniform = RDUniform.new()
@@ -113,7 +114,7 @@ func update_compute() -> void:
 	camera_matrix_uniform.add_id(camera_matrix_buffer)
 
 	var packed_spheres := get_spheres()
-	var spheres_buffer = rd.storage_buffer_create(spheres.size(), packed_spheres)
+	var spheres_buffer = rd.storage_buffer_create(packed_spheres.size(), packed_spheres)
 	var spheres_uniform = RDUniform.new()
 	spheres_uniform.uniform_type = RenderingDevice.UNIFORM_TYPE_STORAGE_BUFFER
 	spheres_uniform.binding = 3
@@ -147,14 +148,29 @@ func add_sphere(sphere: RayTracedSphere) -> void:
 	spheres.append(sphere)
 
 
-func get_camera_matrix() -> PackedByteArray:
+func get_camera_properties() -> PackedByteArray:
+	var t := get_camera_transform()
+	var basi := t.basis
+	var origin := t.origin
+	var cam_to_world : PackedByteArray = PackedFloat32Array([
+			basi.x.x, basi.x.y, basi.x.z, 0.0,
+			basi.y.x, basi.y.y, basi.y.z, 0.0,
+			basi.z.x, basi.z.y, basi.z.z, 0.0,
+			origin.x, origin.y, origin.z, 1.0
+		]).to_byte_array()
+
 	var project = get_camera_projection()
-	return PackedFloat32Array([
+	var projection_mat := PackedFloat32Array([
 			project.x.x, project.x.y, project.x.z, project.x.w,
-			project.y.x, project.y.y, project.y.z, project.y.w,
+			project.y.x, -project.y.y, project.y.z, project.y.w,
 			project.z.x, project.z.y, project.z.z, project.z.w,
 			project.w.x, project.w.y, project.w.z, project.w.w
 		]).to_byte_array()
+	var final_array := []
+	final_array.append_array(cam_to_world)
+	final_array.append_array(projection_mat)
+	final_array.append_array(PackedFloat32Array([near, far, fov]).to_byte_array())
+	return final_array
 
 
 func get_parameters() -> PackedByteArray:
@@ -165,19 +181,22 @@ func get_parameters() -> PackedByteArray:
 
 
 func get_spheres() -> PackedByteArray:
-	var packed_spheres := []
+	var packed_spheres := PackedByteArray([])
 
 	for sphere: RayTracedSphere in spheres:
-		var material = PackedByteArray([
-			sphere.color,
-			sphere.light_intensity,
-			sphere.light_color
-		])
-		packed_spheres.append(PackedByteArray([
+		var sph := PackedFloat32Array([
 			sphere.radius,
-			sphere.global_position,
-			material
-		]))
-	
-	return PackedByteArray(packed_spheres)
-	
+			sphere.global_position.x,
+			sphere.global_position.y,
+			sphere.global_position.z,
+			sphere.color.r,
+			sphere.color.g,
+			sphere.color.b,
+			sphere.light_intensity,
+			sphere.light_color.r,
+			sphere.light_color.g,
+			sphere.light_color.b
+		]).to_byte_array()
+		packed_spheres.append_array(sph)
+
+	return packed_spheres
